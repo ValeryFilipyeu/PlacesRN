@@ -1,20 +1,97 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from "react";
+import { StatusBar } from "expo-status-bar";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import * as SplashScreen from "expo-splash-screen";
+
+import AllPlaces from "./screens/AllPlaces";
+import AddPlace from "./screens/AddPlace";
+import IconButton from "./components/ui/IconButton";
+import { Colors } from "./constants/colors";
+import Map from "./screens/Map";
+import { init } from "./utils/database";
+import PlaceDetails from "./screens/PlaceDetails";
+
+const Stack = createNativeStackNavigator();
 
 export default function App() {
+  const [dbInitialized, setDbInitialized] = useState(false);
+
+  useEffect(() => {
+    init()
+      .then(() => {
+        setDbInitialized(true);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }, []);
+
+  useEffect(() => {
+    async function hideSplashScreen() {
+      await SplashScreen.hideAsync();
+    }
+
+    if (!dbInitialized) {
+      hideSplashScreen().catch(() => {});
+    }
+  }, [dbInitialized]);
+
+  if (!dbInitialized) {
+    SplashScreen.preventAutoHideAsync().catch(() => {});
+    return null;
+  }
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <>
+      <StatusBar style="dark" />
+      <NavigationContainer>
+        <Stack.Navigator
+          screenOptions={{
+            headerStyle: { backgroundColor: Colors.primary500 },
+            headerTintColor: Colors.gray700,
+            contentStyle: { backgroundColor: Colors.gray700 },
+          }}
+        >
+          <Stack.Screen
+            name="AllPlaces"
+            component={AllPlaces}
+            options={({ navigation }) => ({
+              title: "Your Favorite Places",
+              headerRight: ({ tintColor }) => (
+                <IconButton
+                  icon="add"
+                  size={24}
+                  color={tintColor}
+                  onPress={() => navigation.navigate("AddPlace")}
+                />
+              ),
+            })}
+          />
+          <Stack.Screen
+            name="AddPlace"
+            component={AddPlace}
+            options={{
+              title: "Add a new Place",
+            }}
+          />
+          <Stack.Screen
+            name="Map"
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            component={Map}
+          />
+          <Stack.Screen
+            name="PlaceDetails"
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            component={PlaceDetails}
+            options={{
+              title: "Loading Place...",
+            }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
